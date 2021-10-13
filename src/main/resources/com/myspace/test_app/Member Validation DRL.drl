@@ -1,0 +1,53 @@
+package com.myspace.test_app;
+import com.myspace.test_app.IntermediateObject
+
+rule "member validation"
+no-loop
+when
+    accumulate($mdata:Member();$totalCount:count($mdata.getId()));
+then 
+    IntermediateObject $idata = new IntermediateObject();
+    $idata.setTotalMembers($totalCount);
+    insert($idata);
+    System.out.println("=========member validation response========"+$idata.getTotalMembers());
+end;
+
+rule "BonusPoint validation require"
+no-loop
+when
+    Member(primaryMember==true, bonusOptIn==true)
+    $vdata : ValidationObject(memberLimitValidation==true)
+    accumulate($mdata:Member();$totalCount:count($mdata.getId()))
+    accumulate($mdata:Member(bonusOptIn==true);$totalBonusOptInCount:count($mdata.isBonusOptIn()))
+then 
+    if($totalCount==$totalBonusOptInCount){
+        $vdata.setBonusOptinValidation(true);
+        update($vdata);
+    }
+    else{
+        $vdata.setBonusOptinValidation(false);
+        update($vdata);
+    }
+    System.out.println("=========BonusPoint validation response========"+$vdata.isBonusOptinValidation());
+end;
+
+rule "BonusPoint validation not require"
+no-loop
+when
+    Member(primaryMember==true && bonusOptIn==false)
+    $vdata : ValidationObject(memberLimitValidation==true)
+then 
+   $vdata.setBonusOptinValidation(true);
+   update($vdata);
+   System.out.println("=========BonusPoint validation not required ========"+$vdata.isBonusOptinValidation());
+end;
+
+rule "BonusPoint validation"
+no-loop
+when
+    $vdata : ValidationObject(memberLimitValidation==false)
+then 
+   $vdata.setBonusOptinValidation(false);
+   update($vdata);
+   System.out.println("=========BonusPoint validation failure response========"+$vdata.isBonusOptinValidation());
+end;
